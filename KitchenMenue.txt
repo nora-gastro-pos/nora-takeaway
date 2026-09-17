@@ -1,0 +1,51 @@
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/lib/AuthContext";
+import { effectiveTenantId } from "@/lib/constants";
+import MenuManagement from "@/components/dashboard/MenuManagement";
+import BackToOverview from "@/components/dashboard/BackToOverview";
+import { useUiLang } from "@/lib/UiLangContext";
+import { ui } from "@/lib/uiI18n";
+
+export default function KitchenMenu() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuth();
+  const tenantId = effectiveTenantId(user, searchParams.get("betrieb"));
+  const autoImport = searchParams.get("import");
+  const [fallbackTenantId, setFallbackTenantId] = useState(null);
+  const { lang } = useUiLang();
+
+ useEffect(() => {
+    if (!tenantId && user) {
+      supabase
+        .from('tenants')
+        .select('id')
+        .then(({ data: tenants }) => {
+          if (tenants && tenants.length > 0) setFallbackTenantId(tenants[0].id);
+        });
+    }
+  }, [tenantId, user]);
+
+  useEffect(() => {
+    if (autoImport) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("import");
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const effectiveTid = tenantId || fallbackTenantId;
+
+  if (!effectiveTid) {
+    return <div className="py-12 text-center text-sm text-stone-400">{ui(lang, "commonLoading")}</div>;
+  }
+
+  return (
+    <div>
+      <BackToOverview />
+      <MenuManagement tenantId={effectiveTid} autoImport={autoImport} />
+    </div>
+  );
+}
