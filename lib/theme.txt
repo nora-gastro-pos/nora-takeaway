@@ -1,6 +1,0 @@
-export const theme = {
-  primary: '#3b82f6',
-  secondary: '#10b981',
-  background: '#f3f4f6',
-  text: '#1f2937'
-};
